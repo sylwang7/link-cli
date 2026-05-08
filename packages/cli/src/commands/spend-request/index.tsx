@@ -1,4 +1,5 @@
 import type {
+  AuthStorage,
   CredentialType,
   ISpendRequestResource,
   LineItem,
@@ -44,7 +45,10 @@ async function applyOutputFile(
   } as SpendRequest & { card_output_file?: string };
 }
 
-export function createSpendRequestCli(repository: ISpendRequestResource) {
+export function createSpendRequestCli(
+  repository: ISpendRequestResource,
+  authStorage?: AuthStorage,
+) {
   const cli = Cli.create('spend-request', {
     description: 'Spend request management commands',
   });
@@ -55,7 +59,7 @@ export function createSpendRequestCli(repository: ISpendRequestResource) {
     alias: { merchantName: 'm' },
     outputPolicy: 'agent-only' as const,
     async *run(c) {
-      requireAuthGuard(c);
+      requireAuthGuard(c, authStorage);
 
       const opts = c.options;
       const requestApproval = !!opts.requestApproval;
@@ -182,7 +186,7 @@ export function createSpendRequestCli(repository: ISpendRequestResource) {
     }),
     options: updateOptions,
     outputPolicy: 'agent-only' as const,
-    middleware: [requireAuth],
+    middleware: [requireAuth(authStorage)],
     async run(c) {
       const id = c.args.id;
       const opts = c.options;
@@ -235,7 +239,7 @@ export function createSpendRequestCli(repository: ISpendRequestResource) {
     }),
     outputPolicy: 'agent-only' as const,
     async *run(c) {
-      requireAuthGuard(c);
+      requireAuthGuard(c, authStorage);
 
       const id = c.args.id;
 
@@ -279,7 +283,7 @@ export function createSpendRequestCli(repository: ISpendRequestResource) {
     options: retrieveOptions,
     outputPolicy: 'agent-only' as const,
     async *run(c) {
-      requireAuthGuard(c);
+      requireAuthGuard(c, authStorage);
 
       const id = c.args.id;
       const opts = c.options;
@@ -381,7 +385,7 @@ export function createSpendRequestCli(repository: ISpendRequestResource) {
       id: z.string().describe('Spend request ID'),
     }),
     outputPolicy: 'agent-only' as const,
-    middleware: [requireAuth],
+    middleware: [requireAuth(authStorage)],
     async run(c) {
       const id = c.args.id;
 

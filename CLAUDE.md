@@ -98,10 +98,17 @@ Key input field notes:
 - **React 18 + Ink 5** for interactive rendering
 - **`conf`** for local auth token storage
 
+## Global Flags
+
+| Flag | Effect |
+|------|--------|
+| `--auth <path>` | Store auth credentials in a specific file instead of the default platform config location. `auth login` writes to this file; all other commands read from it. Parsed from `process.argv` and stripped before incur processes flags. |
+
 ## Environment Variables
 
 | Variable | Effect |
 |----------|--------|
+| `LINK_AUTH_FILE` | Same as `--auth` — override the auth credential file path (flag takes precedence) |
 | `LINK_API_BASE_URL` | Override API base URL |
 | `LINK_AUTH_BASE_URL` | Override auth base URL |
 | `LINK_HTTP_PROXY` | Route all SDK requests through an HTTP proxy (requires `undici` installed) |

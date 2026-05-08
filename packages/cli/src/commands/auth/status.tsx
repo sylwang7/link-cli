@@ -1,14 +1,19 @@
-import { storage } from '@stripe/link-sdk';
+import { type AuthStorage, storage as defaultStorage } from '@stripe/link-sdk';
 import { Box, Text } from 'ink';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { DISPLAY_DELAY_MS } from '../../utils/constants';
 
 interface AuthStatusProps {
+  authStorage?: AuthStorage;
   onComplete: () => void;
 }
 
-export const AuthStatus: React.FC<AuthStatusProps> = ({ onComplete }) => {
+export const AuthStatus: React.FC<AuthStatusProps> = ({
+  authStorage = defaultStorage,
+  onComplete,
+}) => {
+  const storage = authStorage;
   const [checked, setChecked] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [tokenPreview, setTokenPreview] = useState('');
@@ -26,7 +31,7 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ onComplete }) => {
     setCredentialsPath(credentialsPath);
     setChecked(true);
     setTimeout(onComplete, DISPLAY_DELAY_MS);
-  }, [onComplete]);
+  }, [onComplete, storage]);
 
   if (!checked) {
     return null;

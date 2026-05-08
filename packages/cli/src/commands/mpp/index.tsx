@@ -1,4 +1,4 @@
-import type { ISpendRequestResource } from '@stripe/link-sdk';
+import type { AuthStorage, ISpendRequestResource } from '@stripe/link-sdk';
 import { Cli, z } from 'incur';
 import { render } from 'ink';
 import React from 'react';
@@ -8,7 +8,10 @@ import { DecodeChallengeView } from './decode-view';
 import { MppPay, runMppPay } from './pay';
 import { decodeOptions, payOptions } from './schema';
 
-export function createMppCli(repository: ISpendRequestResource) {
+export function createMppCli(
+  repository: ISpendRequestResource,
+  authStorage?: AuthStorage,
+) {
   const cli = Cli.create('mpp', {
     description: 'Machine payment protocol (MPP) commands',
   });
@@ -22,7 +25,7 @@ export function createMppCli(repository: ISpendRequestResource) {
     options: payOptions,
     alias: { method: 'X', data: 'd', header: 'H' },
     outputPolicy: 'agent-only' as const,
-    middleware: [requireAuth],
+    middleware: [requireAuth(authStorage)],
     async run(c) {
       const url = c.args.url;
       const opts = c.options;

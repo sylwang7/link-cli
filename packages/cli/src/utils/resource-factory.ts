@@ -1,4 +1,5 @@
 import {
+  type AuthStorage,
   type IPaymentMethodsResource,
   type IShippingAddressResource,
   type ISpendRequestResource,
@@ -15,11 +16,13 @@ import type { IAuthResource } from '../auth/types';
 interface ResourceFactoryOptions {
   verbose?: boolean;
   defaultHeaders?: Record<string, string>;
+  authStorage?: AuthStorage;
 }
 
 export class ResourceFactory {
   private readonly verbose: boolean;
   private readonly defaultHeaders?: Record<string, string>;
+  private readonly authStorage?: AuthStorage;
   private authResource?: IAuthResource;
   private accessTokenProvider?: ReturnType<typeof createAccessTokenProvider>;
   private spendRequestResource?: ISpendRequestResource;
@@ -30,6 +33,7 @@ export class ResourceFactory {
   constructor(options: ResourceFactoryOptions = {}) {
     this.verbose = options.verbose ?? false;
     this.defaultHeaders = options.defaultHeaders;
+    this.authStorage = options.authStorage;
   }
 
   createAuthResource(): IAuthResource {
@@ -45,6 +49,10 @@ export class ResourceFactory {
     return this.authResource;
   }
 
+  getAuthStorage(): AuthStorage | undefined {
+    return this.authStorage;
+  }
+
   private createSdkAccessTokenProvider() {
     if (this.accessTokenProvider) {
       return this.accessTokenProvider;
@@ -52,6 +60,7 @@ export class ResourceFactory {
 
     this.accessTokenProvider = createAccessTokenProvider(
       this.createAuthResource(),
+      this.authStorage,
     );
     return this.accessTokenProvider;
   }

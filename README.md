@@ -194,6 +194,8 @@ When you provide `--client-name`, the Link app displays it when you approve the 
 
 Set `NO_UPDATE_NOTIFIER=1` to suppress update checks (for example, in CI).
 
+All commands accept `--auth <path>` to store auth credentials in a specific file instead of the default location. `auth login` writes to this file; all other commands read from it. Useful for running multiple sessions with separate identities.
+
 ### Spend request lifecycle
 
 A spend request moves through: **create** → **request approval** → **approved** (with credentials).
@@ -241,6 +243,7 @@ link-cli mpp decode \
 
 | Variable | Effect |
 |----------|--------|
+| `LINK_AUTH_FILE` | Same as `--auth` — override the auth credential file path (flag takes precedence) |
 | `LINK_API_BASE_URL` | Override the API base URL |
 | `LINK_AUTH_BASE_URL` | Override the auth base URL |
 | `LINK_HTTP_PROXY` | Route all requests through an HTTP proxy (requires `undici`) |
