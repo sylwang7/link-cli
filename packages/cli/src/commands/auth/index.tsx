@@ -10,6 +10,7 @@ import { Login } from './login';
 import { Logout } from './logout';
 import { loginOptions, statusOptions } from './schema';
 import { AuthStatus } from './status';
+import { resolveAuthInfo } from './utils';
 
 interface PollAuthOptions {
   interval: number;
@@ -76,6 +77,7 @@ export function createAuthCli(
   authResource: IAuthResource,
   getUpdateInfo?: UpdateInfoProvider,
   authStorage?: AuthStorage,
+  envAccessToken?: string,
 ) {
   const storage = authStorage ?? defaultStorage;
   const cli = Cli.create('auth', {
@@ -201,22 +203,41 @@ export function createAuthCli(
 
       if (!c.agent && !c.formatExplicit) {
         return renderInteractive(
-          <AuthStatus authStorage={storage} onComplete={() => {}} />,
+          <AuthStatus
+            authStorage={storage}
+            envAccessToken={envAccessToken}
+            onComplete={() => {}}
+          />,
           () => {
-            const auth = storage.getAuth();
+            const info = resolveAuthInfo(envAccessToken, storage);
+            if (info.authenticated) {
+              return {
+                authenticated: true as const,
+                access_token: info.tokenPreview,
+                token_type: info.tokenType,
+                ...(info.source === 'storage' && {
+                  credentials_path: info.credentialsPath,
+                }),
+                ...(update && { update }),
+              };
+            }
             return {
-              authenticated: !!auth,
-              ...(auth
-                ? {
-                    access_token: `${auth.access_token.substring(0, 20)}...`,
-                    token_type: auth.token_type,
-                  }
-                : {}),
-              credentials_path: storage.getPath(),
+              authenticated: false as const,
+              credentials_path: info.credentialsPath,
               ...(update && { update }),
             };
           },
         );
+      }
+
+      if (envAccessToken) {
+        yield {
+          authenticated: true as const,
+          access_token: `${envAccessToken.substring(0, 20)}...`,
+          token_type: 'Bearer',
+          ...(update && { update }),
+        };
+        return;
       }
 
       yield* pollAuthStatus(

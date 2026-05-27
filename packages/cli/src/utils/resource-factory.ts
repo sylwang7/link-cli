@@ -5,6 +5,7 @@ import {
   type ISpendRequestResource,
   type IUserInfoResource,
   type IWebBotAuthResource,
+  LinkAuthenticationError,
   PaymentMethodsResource,
   ShippingAddressResource,
   SpendRequestResource,
@@ -57,13 +58,20 @@ interface ResourceFactoryOptions {
   verbose?: boolean;
   defaultHeaders?: Record<string, string>;
   authStorage?: AuthStorage;
+  envAccessToken?: string;
+  envRefreshToken?: string;
+  noRefresh?: boolean;
+  authResource?: IAuthResource;
 }
 
 export class ResourceFactory {
   private readonly verbose: boolean;
   private readonly defaultHeaders?: Record<string, string>;
   private readonly authStorage?: AuthStorage;
-  private authResource?: IAuthResource;
+  private readonly envAccessToken?: string;
+  private readonly envRefreshToken?: string;
+  private readonly noRefresh: boolean;
+  private _authResource?: IAuthResource;
   private accessTokenProvider?: ReturnType<typeof createAccessTokenProvider>;
   private spendRequestResource?: ISpendRequestResource;
   private paymentMethodsResource?: IPaymentMethodsResource;
@@ -75,25 +83,33 @@ export class ResourceFactory {
     this.verbose = options.verbose ?? false;
     this.defaultHeaders = options.defaultHeaders;
     this.authStorage = options.authStorage;
+    this.envAccessToken = options.envAccessToken;
+    this.envRefreshToken = options.envRefreshToken;
+    this.noRefresh = options.noRefresh ?? false;
+    this._authResource = options.authResource;
   }
 
   createAuthResource(): IAuthResource {
-    if (this.authResource) {
-      return this.authResource;
+    if (this._authResource) {
+      return this._authResource;
     }
 
-    this.authResource = sanitizeResource(
+    this._authResource = sanitizeResource(
       new LinkAuthResource({
         verbose: this.verbose,
         defaultHeaders: this.defaultHeaders,
       }),
     );
 
-    return this.authResource;
+    return this._authResource;
   }
 
   getAuthStorage(): AuthStorage | undefined {
     return this.authStorage;
+  }
+
+  getAccessTokenProvider(): ReturnType<typeof createAccessTokenProvider> {
+    return this.createSdkAccessTokenProvider();
   }
 
   private createSdkAccessTokenProvider() {
@@ -101,9 +117,31 @@ export class ResourceFactory {
       return this.accessTokenProvider;
     }
 
+    if (this.envAccessToken) {
+      const envAccessToken = this.envAccessToken;
+      const envRefreshToken = this.envRefreshToken;
+      const noRefresh = this.noRefresh;
+
+      this.accessTokenProvider = async ({ forceRefresh } = {}) => {
+        if (forceRefresh) {
+          if (noRefresh || !envRefreshToken) {
+            throw new LinkAuthenticationError(
+              'Access token expired. Update LINK_ACCESS_TOKEN and retry.',
+            );
+          }
+          const refreshed =
+            await this.createAuthResource().refreshToken(envRefreshToken);
+          return refreshed.access_token;
+        }
+        return envAccessToken;
+      };
+      return this.accessTokenProvider;
+    }
+
     this.accessTokenProvider = createAccessTokenProvider(
       this.createAuthResource(),
       this.authStorage,
+      { noRefresh: this.noRefresh },
     );
     return this.accessTokenProvider;
   }
